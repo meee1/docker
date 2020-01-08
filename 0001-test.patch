@@ -1,0 +1,199 @@
+From a3527abf48329311e76ef3cb82c7aca86eb305b2 Mon Sep 17 00:00:00 2001
+From: Michael Oborne <mich146@hotmail.com>
+Date: Thu, 9 Jan 2020 06:47:05 +0800
+Subject: [PATCH] test
+
+---
+ Tools/ardupilotwaf/boards.py      |  2 +-
+ Tools/ardupilotwaf/toolchain.py   |  8 +++--
+ libraries/SITL/SIM_FlightAxis.cpp |  8 +----
+ libraries/asm/ioctls.h            | 12 +++++++
+ libraries/asm/termbits.h          | 75 +++++++++++++++++++++++++++++++++++++++
+ wscript                           |  5 +--
+ 6 files changed, 98 insertions(+), 12 deletions(-)
+ create mode 100644 libraries/asm/ioctls.h
+ create mode 100644 libraries/asm/termbits.h
+
+diff --git a/Tools/ardupilotwaf/boards.py b/Tools/ardupilotwaf/boards.py
+index 25a9666be5..75eada54fa 100644
+--- a/Tools/ardupilotwaf/boards.py
++++ b/Tools/ardupilotwaf/boards.py
+@@ -373,7 +373,7 @@ class sitl(Board):
+             'm',
+         ]
+ 
+-        cfg.check_librt(env)
++        #cfg.check_librt(env)
+         cfg.check_feenableexcept()
+ 
+         env.LINKFLAGS += ['-pthread',]
+diff --git a/Tools/ardupilotwaf/toolchain.py b/Tools/ardupilotwaf/toolchain.py
+index 596ab451c1..3ddaf2d1a7 100644
+--- a/Tools/ardupilotwaf/toolchain.py
++++ b/Tools/ardupilotwaf/toolchain.py
+@@ -128,8 +128,12 @@ def _set_pkgconfig_crosscompilation_wrapper(cfg):
+     cfg.validate_cfg = new_validate_cfg
+ 
+ def configure(cfg):
+-    _filter_supported_c_compilers('gcc', 'clang')
+-    _filter_supported_cxx_compilers('g++', 'clang++')
++    #_filter_supported_c_compilers('gcc', 'clang')
++    #_filter_supported_cxx_compilers('g++', 'clang++')
++    
++    cfg.load('c_emscripten')
++    
++    cfg.env.CXXFLAGS = ['-pthread']
+ 
+     cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
+ 
+diff --git a/libraries/SITL/SIM_FlightAxis.cpp b/libraries/SITL/SIM_FlightAxis.cpp
+index 5f1c8aa915..e28e1cebd5 100644
+--- a/libraries/SITL/SIM_FlightAxis.cpp
++++ b/libraries/SITL/SIM_FlightAxis.cpp
+@@ -118,13 +118,7 @@ void *FlightAxis::update_thread(void *arg)
+ {
+     FlightAxis *flightaxis = (FlightAxis *)arg;
+ 
+-#if defined(__CYGWIN__) || defined(__CYGWIN64__)
+-    //Cygwin doesn't support pthread_setname_np
+-#elif defined(__APPLE__) && defined(__MACH__)
+-    pthread_setname_np("ardupilot-flightaxis");
+-#else
+-    pthread_setname_np(pthread_self(), "ardupilot-flightaxis");
+-#endif
++
+     
+     flightaxis->update_loop();
+     return nullptr;
+diff --git a/libraries/asm/ioctls.h b/libraries/asm/ioctls.h
+new file mode 100644
+index 0000000000..302ec657d1
+--- /dev/null
++++ b/libraries/asm/ioctls.h
+@@ -0,0 +1,12 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++#ifndef _ASM_ALPHA_IOCTLS_H
++#define _ASM_ALPHA_IOCTLS_H
++
++//#include <bits/ioctl.h>
++
++#define TCGETS2		_IOR('T', 0x2A, struct termios2)
++#define TCSETS2		_IOW('T', 0x2B, struct termios2)
++#define TCSETSW2	_IOW('T', 0x2C, struct termios2)
++#define TCSETSF2	_IOW('T', 0x2D, struct termios2)
++
++#endif /* _ASM_ALPHA_IOCTLS_H */
+\ No newline at end of file
+diff --git a/libraries/asm/termbits.h b/libraries/asm/termbits.h
+new file mode 100644
+index 0000000000..f8284033a8
+--- /dev/null
++++ b/libraries/asm/termbits.h
+@@ -0,0 +1,75 @@
++
++typedef unsigned char	cc_t;
++typedef unsigned int	speed_t;
++typedef unsigned int	tcflag_t;
++
++#define NCCS 19
++struct termios2 {
++	tcflag_t c_iflag;		/* input mode flags */
++	tcflag_t c_oflag;		/* output mode flags */
++	tcflag_t c_cflag;		/* control mode flags */
++	tcflag_t c_lflag;		/* local mode flags */
++	cc_t c_line;			/* line discipline */
++	cc_t c_cc[NCCS];		/* control characters */
++	speed_t c_ispeed;		/* input speed */
++	speed_t c_ospeed;		/* output speed */
++};
++
++int pthread_setname_np(pthread_t thread, const char *name) { return 0; }
++
++/* c_cflag bit meaning */
++#define CBAUD	0010017
++#define  B0	0000000		/* hang up */
++#define  B50	0000001
++#define  B75	0000002
++#define  B110	0000003
++#define  B134	0000004
++#define  B150	0000005
++#define  B200	0000006
++#define  B300	0000007
++#define  B600	0000010
++#define  B1200	0000011
++#define  B1800	0000012
++#define  B2400	0000013
++#define  B4800	0000014
++#define  B9600	0000015
++#define  B19200	0000016
++#define  B38400	0000017
++#define EXTA B19200
++#define EXTB B38400
++#define CSIZE	0000060
++#define   CS5	0000000
++#define   CS6	0000020
++#define   CS7	0000040
++#define   CS8	0000060
++#define CSTOPB	0000100
++#define CREAD	0000200
++#define PARENB	0000400
++#define PARODD	0001000
++#define HUPCL	0002000
++#define CLOCAL	0004000
++#define CBAUDEX 0010000
++#define    BOTHER 0010000
++#define    B57600 0010001
++#define   B115200 0010002
++#define   B230400 0010003
++#define   B460800 0010004
++#define   B500000 0010005
++#define   B576000 0010006
++#define   B921600 0010007
++#define  B1000000 0010010
++#define  B1152000 0010011
++#define  B1500000 0010012
++#define  B2000000 0010013
++#define  B2500000 0010014
++#define  B3000000 0010015
++#define  B3500000 0010016
++#define  B4000000 0010017
++#define CIBAUD	  002003600000	/* input baud rate */
++#define CMSPAR	  010000000000	/* mark or space (stick) parity */
++#define CRTSCTS	  020000000000	/* flow control */
++
++/* tcflush() and TCFLSH use these */
++#define	TCIFLUSH	0
++#define	TCOFLUSH	1
++#define	TCIOFLUSH	2
+\ No newline at end of file
+diff --git a/wscript b/wscript
+index 598a902e3c..4bcdf57c01 100644
+--- a/wscript
++++ b/wscript
+@@ -53,12 +53,13 @@ def init(ctx):
+ 
+     if not board:
+         return
++        
+ 
+     # define the variant build commands according to the board
+     _set_build_context_variant(board)
+ 
+ def options(opt):
+-    opt.load('compiler_cxx compiler_c waf_unit_test python')
++    opt.load('compiler_cxx compiler_c c_emscripten waf_unit_test python')
+     opt.load('ardupilotwaf')
+     opt.load('build_summary')
+ 
+@@ -267,7 +268,7 @@ def configure(cfg):
+     cfg.load('waf_unit_test')
+     cfg.load('mavgen')
+     cfg.load('uavcangen')
+-
++    
+     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
+ 
+     cfg.start_msg('Source is git repository')
+-- 
+2.12.0.windows.1
+
