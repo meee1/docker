@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM alpine:3.10
 
 # Make a working directory
 WORKDIR /ardupilot
@@ -29,3 +29,9 @@ RUN git clone https://github.com/ArduPilot/ardupilot.git --depth 2 --no-single-b
 # Build binary
 RUN cd /ardupilot/src && ./waf configure --board sitl --no-submodule-update \
     && ./waf copter
+
+RUN apk add --no-cache libstdc++
+
+# Copy binary and defaut param file from previous image
+COPY /ardupilot/src/build/sitl/bin/arducopter .
+COPY /ardupilot/src/Tools/autotest/default_params/copter.parm .
