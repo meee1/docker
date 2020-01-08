@@ -16,4 +16,4 @@ jobs:
     - name: src
       run: git clone https://github.com/ArduPilot/ardupilot.git --depth 2 --no-single-branch src     && cd src     && git checkout master     && git submodule update --init --recursive modules/gbenchmark     && git submodule update --init --recursive modules/gtest     && git submodule update --init --recursive modules/mavlink     && git submodule update --init --recursive modules/uavcan     && git submodule update --init --recursive modules/waf
     - name: test
-      run: cd src && ./waf configure copter --check-cxx-compiler=emcc --check-c-compiler=emcc
+      run: source ./emsdk/emsdk_env.sh && cd src && ./waf configure copter --check-cxx-compiler=emcc --check-c-compiler=emcc
