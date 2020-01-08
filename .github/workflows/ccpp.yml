@@ -9,5 +9,18 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
+    - name: python
+      run: sudo apt-get install python2.7
+    - name: em
+      run: git clone https://github.com/emscripten-core/emsdk.git && cd emsdk && ./emsdk install latest && ./emsdk activate latest && source ./emsdk_env.sh
+    - name: src
+      run: git clone https://github.com/ArduPilot/ardupilot.git --depth 2 --no-single-branch src \
+    && cd src \
+    && git checkout master \
+    && git submodule update --init --recursive modules/gbenchmark \
+    && git submodule update --init --recursive modules/gtest \
+    && git submodule update --init --recursive modules/mavlink \
+    && git submodule update --init --recursive modules/uavcan \
+    && git submodule update --init --recursive modules/waf
     - name: test
-      run: ./waf-light --tools=c_emscripten
+      run: ./waf --tools=c_emscripten
