@@ -17,3 +17,10 @@ jobs:
       run: git clone https://github.com/meee1/ardupilot.git --depth 2 --no-single-branch src     && cd src     && git checkout emscripten  && git submodule update --init --recursive modules/gbenchmark     && git submodule update --init --recursive modules/gtest     && git submodule update --init --recursive modules/mavlink     && git submodule update --init --recursive modules/uavcan     && git submodule update --init --recursive modules/waf
     - name: test
       run: source ./emsdk/emsdk_env.sh && cd src && ./waf configure copter --disable-gccdeps --disable-tests
+    - name: art
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: arduwasm
+        # Directory containing files to upload
+        path: src/build/sitl/bin
